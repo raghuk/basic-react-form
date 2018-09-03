@@ -6,10 +6,7 @@ import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import TableCell from '@material-ui/core/TableCell';
-import TextField from '@material-ui/core/TextField';
-
 import EditIcon from "@material-ui/icons/Edit";
-import DeleteIcon from "@material-ui/icons/Delete";
 
 import InlineForm from './form';
 import { header, data } from './data';
@@ -26,14 +23,17 @@ class DataTable extends React.Component {
     };
   }
 
+  // setting correct index on edit
   handleEdit(index) {
     this.setState({ editRowIndex: index });
   }
 
+  // reset the index for edit
   handleCancel() {
     this.setState({ editRowIndex: -1 });
   }
 
+  // on inline form submit, we save edited values in state
   handleSave(index, item) {
     this.setState(state => ({
       data: state.data.map((row, j) => (j === index ? item : row))
@@ -44,9 +44,10 @@ class DataTable extends React.Component {
     this.handleCancel();
   }
 
-  handleDelete(index) {
+  // based on delete index, we update the state
+  handleDelete(index, item) {
     this.setState(state => ({
-      data: state.data.filter((row, j) => j !== index)
+      data: state.data.filter((row, j) => (j === index ? item : row))
     }), function() {
       this.props.handleDelete(index);
     });
@@ -54,35 +55,36 @@ class DataTable extends React.Component {
     this.handleCancel();
   }
 
-  renderHeader(x, i) {
+  // renders the header based on header prop values
+  renderHeader() {
     const { header } = this.state;
-
     return (
       <TableRow>
         {header.map((item, index) => (
-          <TableCell key={`thc-${index}`}>{item.name}</TableCell>
+          <TableCell key={`thc-${index}`} numeric={item.prop === 'actions'}>{item.name}</TableCell>
         ))}
-        <TableCell />
       </TableRow>
     );
   }
 
+  // renders the each row based on data prop values
+  // based on edit selected index, display's edit form
   renderRow(item, index) {
     const { header } = this.state;
     const currentlyEditing = (this.state.editRowIndex === index);
 
     return (
       currentlyEditing ? (
-        <InlineForm key={`if-${index}`} header={header} item={item} index={index} handleCancel={this.handleCancel.bind(this)} handleSave={this.handleSave.bind(this)} />
+        <InlineForm key={`if-${index}`} header={header} item={item} index={index} handleDelete={this.handleDelete.bind(this, index)} handleCancel={this.handleCancel.bind(this)} handleSave={this.handleSave.bind(this)} />
       ) : (
         <TableRow key={`tr-${index}`} selected={false}>
-          {header.map((y, i) => (
-            <TableCell key={`trc-${i}`}>{item[y.prop]}</TableCell>
-          ))}
-          <TableCell>
-            { this.props.enableEdit ? <EditIcon onClick={() => this.handleEdit(index)} /> : null }
-            { this.props.enableDelete ? <DeleteIcon onClick={() => this.handleDelete(index)} /> : null }
-          </TableCell>
+          {header.map((y, i) => {
+            if (y.prop === 'actions') {
+              return <TableCell key={`trc-${i}`} numeric={true} style={{padding:'0px !important'}}><EditIcon onClick={() => this.handleEdit(index)} /></TableCell>
+            } else {
+              return <TableCell key={`trc-${i}`} style={{padding:'0px !important'}}>{item[y.prop]}</TableCell>
+            }
+          })}
         </TableRow>
       )
     );
@@ -107,8 +109,6 @@ class DataTable extends React.Component {
 DataTable.propTypes = {
   header: PropTypes.array,
   data: PropTypes.array,
-  enableEdit: PropTypes.bool,
-  enableDelete: PropTypes.bool,
   handleSave: PropTypes.func,
   handleDelete: PropTypes.func
 };
@@ -116,8 +116,6 @@ DataTable.propTypes = {
 DataTable.defaultProps = {
   header: header || [],
   data: data || [],
-  enableEdit: true,
-  enableDelete: false,
   handleSave: (index) => {},
   handleDelete: (index) => {}
 };
